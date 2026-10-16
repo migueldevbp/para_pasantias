@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoboCódigo · Laboratorio de Algoritmos</title>
+<style>
+  :root {
+    --oscuro: #0E1424;
+    --fondo: #10172A;
+    --panel: #1A2338;
+    --panel2: #222D47;
+    --borde: #2E3B5C;
+    --claro: #F5F3EE;
+    --suave: #9AA6C0;
+    --ambar: #F5B83D;
+    --cian: #4CC9F0;
+    --rojo: #FF6B6B;
+    --verde: #5BD68A;
+    --ladrillo: #D9825B;
+    --mono: Consolas, "JetBrains Mono", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--claro);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 16px;
+  }
+  .ico { width: 1em; height: 1em; vertical-align: -0.15em; flex-shrink: 0; }
+  code { font-family: var(--mono); background: var(--panel2); padding: 1px 6px; border-radius: 4px; color: var(--cian); }
+
+  /* ---------- Encabezado ---------- */
+  header {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    padding: 16px 24px 16px 110px; border-bottom: 1px solid var(--borde); background: var(--oscuro);
+  }
+  .marca { display: flex; align-items: center; gap: 12px; }
+  .marca .ico { width: 36px; height: 36px; color: var(--cian); }
+  .marca h1 { margin: 0; font-size: 24px; }
+  .marca p { margin: 0; color: var(--suave); font-size: 14px; }
+  .niveles { display: flex; gap: 6px; flex-wrap: wrap; }
+  .niveles button { padding: 8px 14px; font-size: 15px; background: var(--panel2); }
+  .niveles button.activo { background: var(--ambar); color: var(--oscuro); }
+  .niveles button.hecho .ico { color: var(--verde); }
+  .niveles button.activo.hecho .ico { color: var(--oscuro); }
+
+  /* ---------- Layout ---------- */
+  main {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.15fr);
+    gap: 20px;
+    padding: 20px 24px;
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .card { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 16px; }
+  .card h2 { margin: 0 0 10px; font-size: 15px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--suave); display: flex; align-items: center; gap: 8px; }
+  .card h2 .ico { color: var(--cian); width: 18px; height: 18px; }
+
+  /* ---------- Objetivo ---------- */
+  .objetivo h3 { margin: 0 0 6px; font-size: 22px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tema { font-size: 13px; font-weight: 600; color: var(--oscuro); background: var(--cian); padding: 3px 10px; border-radius: 999px; }
+  .aleatorio { font-size: 13px; font-weight: 600; color: var(--oscuro); background: var(--ambar); padding: 3px 10px; border-radius: 999px; display: inline-flex; gap: 6px; align-items: center; }
+  .objetivo p { margin: 6px 0 0; line-height: 1.5; color: #D5DAE6; }
+
+  /* ---------- Tablero ---------- */
+  .tablero-wrap { display: flex; justify-content: center; }
+  .tablero {
+    display: grid; gap: 3px; width: min(100%, 520px); aspect-ratio: 1;
+    background: var(--oscuro); padding: 8px; border-radius: 14px;
+  }
+  .celda { background: #243050; border-radius: 5px; display: flex; align-items: center; justify-content: center; min-width: 0; }
+  .celda .ico { width: 78%; height: 78%; }
+  .celda.rastro { background: #2D4468; }
+  .celda.muro { background: #3B2B2B; }
+  .celda.muro .ico { color: var(--ladrillo); width: 85%; height: 85%; }
+  .celda.meta { box-shadow: inset 0 0 0 2px var(--ambar); }
+  .celda .estrella { color: var(--ambar); }
+  .celda .moneda { color: #FFD45A; width: 60%; height: 60%; }
+  .celda .robot { transition: transform 0.15s; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .stat { background: var(--panel2); border-radius: 10px; padding: 10px; text-align: center; }
+  .stat b { display: block; font-size: 26px; font-family: var(--mono); }
+  .stat span { font-size: 13px; color: var(--suave); }
+
+  /* ---------- Editor ---------- */
+  .editor-wrap {
+    position: relative; display: flex; background: var(--oscuro); border-radius: 12px;
+    border: 1px solid var(--borde); height: 360px; overflow: hidden;
+  }
+  .gutter {
+    width: 48px; padding: 12px 8px 12px 0; text-align: right; color: #55617D;
+    font-family: var(--mono); font-size: 16px; line-height: 24px; overflow: hidden;
+    background: #0B1120; user-select: none; flex-shrink: 0;
+  }
+  .gutter div.act { color: var(--ambar); font-weight: bold; }
+  .gutter div.err { color: var(--rojo); font-weight: bold; }
+  .area { position: relative; flex: 1; min-width: 0; }
+  .resaltado {
+    position: absolute; left: 0; right: 0; height: 24px; pointer-events: none;
+    background: rgba(245, 184, 61, 0.22); border-left: 3px solid var(--ambar); display: none;
+  }
+  .resaltado.err { background: rgba(255, 107, 107, 0.22); border-left-color: var(--rojo); }
+  textarea {
+    position: absolute; inset: 0; width: 100%; height: 100%; resize: none; border: none; outline: none;
+    background: transparent; color: var(--claro); font-family: var(--mono); font-size: 16px; line-height: 24px;
+    padding: 12px; white-space: pre; overflow: auto; tab-size: 2; caret-color: var(--ambar);
+  }
+  textarea[readonly] { color: #C9CFDC; }
+
+  /* ---------- Controles ---------- */
+  .controles { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  button {
+    font: inherit; font-weight: 600; border: none; border-radius: 10px; padding: 10px 16px; cursor: pointer;
+    background: var(--panel2); color: var(--claro); display: inline-flex; align-items: center; gap: 8px;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  button:hover { filter: brightness(1.2); }
+  button:active { transform: scale(0.96); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button .ico { width: 18px; height: 18px; }
+  .b-ejecutar { background: var(--verde); color: var(--oscuro); }
+  .b-paso { background: var(--cian); color: var(--oscuro); }
+  .b-detener { background: #5A2A2A; }
+  .velocidad { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--suave); font-size: 14px; }
+  .velocidad input { accent-color: var(--ambar); width: 110px; }
+
+  /* ---------- Consola y variables ---------- */
+  .abajo { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .abajo { grid-template-columns: 1fr; } }
+  .consola {
+    background: var(--oscuro); border-radius: 10px; padding: 10px 12px; height: 180px; overflow-y: auto;
+    font-family: var(--mono); font-size: 14px; line-height: 1.6;
+  }
+  .consola div { display: flex; gap: 8px; align-items: flex-start; }
+  .consola .ico { margin-top: 4px; }
+  .c-info { color: var(--cian); } .c-error { color: var(--rojo); } .c-ok { color: var(--verde); } .c-out { color: var(--claro); } .c-aviso { color: var(--ambar); }
+  table.vars { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 14px; }
+  table.vars th { text-align: left; color: var(--suave); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--borde); }
+  table.vars td { padding: 4px 6px; border-bottom: 1px solid #222C45; }
+  table.vars td:first-child { color: var(--cian); }
+  .vars-wrap { height: 180px; overflow-y: auto; background: var(--oscuro); border-radius: 10px; padding: 6px; }
+  .vacio { color: #55617D; font-style: italic; padding: 6px; font-size: 14px; }
+
+  /* ---------- Referencia ---------- */
+  details.ref summary { cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; list-style: none; }
+  details.ref summary .ico { color: var(--cian); }
+  .ref-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 12px; }
+  .ref-grid div { background: var(--panel2); border-radius: 10px; padding: 10px 12px; }
+  .ref-grid h4 { margin: 0 0 6px; color: var(--ambar); font-size: 14px; }
+  .ref-grid pre { margin: 0; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; color: #D5DAE6; white-space: pre-wrap; }
+
+  .confeti { position: fixed; top: -30px; pointer-events: none; border-radius: 2px; z-index: 50; }
+</style>
+</head>
+<body>
+<a href="index.html" style="position:fixed;top:12px;left:12px;color:#9AA6C0;text-decoration:none;font:600 14px Segoe UI,Arial,sans-serif;background:#1C2640;padding:8px 14px;border-radius:999px;z-index:20">&#8592; Retos</a>
+
+<header>
+  <div class="marca">
+    <span data-i="robot"></span>
+    <div>
+      <h1>RoboCódigo</h1>
+      <p>Laboratorio de algoritmos con pseudocódigo</p>
+    </div>
+  </div>
+  <div class="niveles" id="niveles"></div>
+</header>
+
+<main>
+  <!-- ============ COLUMNA IZQUIERDA ============ -->
+  <section class="col">
+    <div class="card objetivo">
+      <h3 id="titulo"></h3>
+      <p id="objetivo"></p>
+    </div>
+
+    <div class="card">
+      <div class="tablero-wrap"><div class="tablero" id="tablero"></div></div>
+      <div class="stats">
+        <div class="stat"><b id="sPasos">0</b><span>Pasos</span></div>
+        <div class="stat"><b id="sInstr">0</b><span>Instrucciones</span></div>
+        <div class="stat"><b id="sMonedas">0/0</b><span>Monedas</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <details class="ref">
+        <summary><span data-i="libro"></span> Referencia del lenguaje</summary>
+        <div class="ref-grid">
+          <div><h4>Acciones</h4><pre>avanzar
+girar_derecha
+girar_izquierda
+recoger</pre></div>
+          <div><h4>Acciones con cantidad</h4><pre>avanzar * 4
+avanzar 4
+avanzar(2 + 3)
+3 * girar_derecha
+avanzar(lado - 1)</pre></div>
+          <div><h4>Sensores (devuelven verdadero/falso)</h4><pre>hay_muro_adelante()
+hay_muro_derecha()
+hay_muro_izquierda()
+hay_moneda()
+en_meta()
+monedas_recogidas()  // número</pre></div>
+          <div><h4>Variables y salida</h4><pre>pasos &lt;- 0
+pasos &lt;- pasos + 1
+escribir "Total: ", pasos</pre></div>
+          <div><h4>Repetir N veces</h4><pre>repetir 4 veces
+  avanzar
+fin_repetir</pre></div>
+          <div><h4>Mientras</h4><pre>mientras no en_meta() hacer
+  avanzar
+fin_mientras</pre></div>
+          <div><h4>Si / sino</h4><pre>si hay_moneda() entonces
+  recoger
+sino
+  avanzar
+fin_si</pre></div>
+          <div><h4>Para</h4><pre>para i &lt;- 1 hasta 5 hacer
+  escribir i
+fin_para
+// opcional: con paso 2</pre></div>
+          <div><h4>Operadores</h4><pre>+  -  *  /  ^  mod  div
+=  &lt;&gt;  &lt;  &gt;  &lt;=  &gt;=
+y   o   no
+// comentario</pre></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ COLUMNA DERECHA ============ -->
+  <section class="col">
+    <div class="card">
+      <h2><span data-i="codigo"></span> Tu algoritmo</h2>
+      <div class="editor-wrap">
+        <div class="gutter" id="gutter"></div>
+        <div class="area">
+          <div class="resaltado" id="resaltado"></div>
+          <textarea id="editor" spellcheck="false" wrap="off"></textarea>
+        </div>
+      </div>
+      <div class="controles">
+        <button class="b-ejecutar" id="bEjecutar" title="Ctrl + Enter"><span data-i="play"></span> <span id="tEjecutar">Ejecutar</span></button>
+        <button class="b-paso" id="bPaso" title="Ejecuta una instrucción a la vez"><span data-i="paso"></span> Paso a paso</button>
+        <button class="b-detener" id="bDetener"><span data-i="stop"></span> Detener</button>
+        <button id="bSolucion" title="Para el docente"><span data-i="idea"></span> Solución</button>
+        <label class="velocidad"><span data-i="rapido"></span> Velocidad
+          <input type="range" id="velocidad" min="1" max="10" value="6">
+        </label>
+      </div>
+    </div>
+
+    <div class="abajo">
+      <div class="card">
+        <h2><span data-i="terminal"></span> Consola</h2>
+        <div class="consola" id="consola"></div>
+      </div>
+      <div class="card">
+        <h2><span data-i="llaves"></span> Variables</h2>
+        <div class="vars-wrap" id="vars"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* =========================================================
+   1. ÍCONOS (SVG integrados: funcionan sin internet)
+   ========================================================= */
+const ICONOS = {
+  robot:    '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.5"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><path d="M2 12v4M22 12v4"/>',
+  estrella: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>',
+  muro:     '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9.3h18M3 14.7h18M12 4v5.3M7.5 9.3v5.4M16.5 9.3v5.4M12 14.7V20"/>',
+  moneda:   '<circle cx="12" cy="12" r="9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="5.5" stroke="#B8860B"/>',
+  play:     '<polygon points="6 4 20 12 6 20 6 4" fill="currentColor"/>',
+  pausa:    '<rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/>',
+  paso:     '<polygon points="5 4 15 12 5 20 5 4" fill="currentColor"/><path d="M19 5v14"/>',
+  stop:     '<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/>',
+  idea:     '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
+  rapido:   '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+  codigo:   '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  terminal: '<path d="m4 17 6-6-6-6M12 19h8"/>',
+  llaves:   '<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/>',
+  libro:    '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  check:    '<path d="M20 6 9 17l-5-5"/>',
+  exito:    '<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>',
+  alerta:   '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  info:     '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  salida:   '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  trofeo:   '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+  dado:     '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="16" cy="16" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>'
+};
+
+function icono(nombre, clase = "") {
+  return `<svg class="ico ${clase}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[nombre]}</svg>`;
+}
+// Robot visto desde arriba: la flecha ámbar indica hacia dónde mira
+function iconoRobot(dir) {
+  return `<svg class="ico robot" viewBox="0 0 24 24" style="transform:rotate(${dir * 90}deg)" aria-label="robot">
+    <circle cx="12" cy="13" r="8" fill="#4CC9F0"/>
+    <circle cx="9" cy="11" r="1.6" fill="#0E1424"/><circle cx="15" cy="11" r="1.6" fill="#0E1424"/>
+    <polygon points="12 1 8.5 5.5 15.5 5.5" fill="#F5B83D"/></svg>`;
+}
+document.querySelectorAll("[data-i]").forEach(el => el.outerHTML = icono(el.dataset.i));
+
+/* =========================================================
+   2. EL MUNDO DEL ROBOT
+   dir: 0 = norte (arriba), 1 = este, 2 = sur, 3 = oeste
+   ========================================================= */
+const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
+const k = (x, y) => x + "," + y;
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+function base(n) {
+  return { n, muros: new Set(), monedas: new Set(), meta: null, robot: { x: 0, y: 0, dir: 1 }, extra: {} };
+}
+function libre(m, x, y) {
+  return x >= 0 && y >= 0 && x < m.n && y < m.n && !m.muros.has(k(x, y));
+}
+
+/* =========================================================
+   3. NIVELES
+   ========================================================= */
+const NIVELES = [
+  {
+    titulo: "Primeros pasos", tema: "Secuencia y repetir", aleatorio: false,
+    objetivo: "Lleva al robot hasta la estrella. Prueba varias formas: <code>avanzar * 6</code>, <code>avanzar(2 * 3)</code> o un bucle <code>repetir</code>.",
+    generar() {
+      const m = base(7); m.robot = { x: 0, y: 3, dir: 1 }; m.meta = [6, 3];
+      for (let x = 0; x < 7; x++) { m.muros.add(k(x, 2)); m.muros.add(k(x, 4)); }
+      return m;
+    },
+    plantilla: "// Nivel 1: lleva al robot a la estrella\navanzar\navanzar\n",
+    solucion: "repetir 6 veces\n  avanzar\nfin_repetir\n"
+  },
+  {
+    titulo: "La escalera", tema: "Patrones", aleatorio: false,
+    objetivo: "Sube la escalera hasta la estrella. Encuentra el <b>patrón que se repite</b> y escríbelo una sola vez dentro de un bucle.",
+    generar() {
+      const m = base(7); m.robot = { x: 0, y: 6, dir: 1 }; m.meta = [6, 0];
+      for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++)
+        if (x + y <= 5 || x + y >= 8) m.muros.add(k(x, y));
+      return m;
+    },
+    plantilla: "// Nivel 2: ¿qué movimientos se repiten?\n",
+    solucion: "repetir 6 veces\n  avanzar\n  girar_izquierda\n  avanzar\n  girar_derecha\nfin_repetir\n"
+  },
+  {
+    titulo: "Recolector", tema: "Condicionales", aleatorio: true,
+    objetivo: "Recoge <b>todas</b> las monedas y termina en la estrella. Las monedas cambian de lugar en cada ejecución: necesitas <code>si ... entonces</code>.",
+    generar() {
+      const m = base(8); m.robot = { x: 0, y: 3, dir: 1 }; m.meta = [7, 3];
+      for (let x = 0; x < 8; x++) { m.muros.add(k(x, 2)); m.muros.add(k(x, 4)); }
+      for (let x = 1; x <= 6; x++) if (Math.random() < 0.5) m.monedas.add(k(x, 3));
+      if (m.monedas.size === 0) m.monedas.add(k(rnd(1, 6), 3));
+      return m;
+    },
+    plantilla: "// Nivel 3: recoger sin moneda es un error\n",
+    solucion: "repetir 7 veces\n  avanzar\n  si hay_moneda() entonces\n    recoger\n  fin_si\nfin_repetir\nescribir \"Monedas: \", monedas_recogidas()\n"
+  },
+  {
+    titulo: "Distancia desconocida", tema: "Mientras + contador", aleatorio: true,
+    objetivo: "La pared cambia de lugar en cada ejecución. Avanza hasta la estrella y luego usa <code>escribir</code> para mostrar <b>cuántos pasos diste</b>. Necesitas una variable contador.",
+    generar() {
+      const m = base(9); m.robot = { x: 0, y: 4, dir: 1 };
+      const L = rnd(3, 7); m.meta = [L, 4]; m.extra.L = L;
+      for (let x = 0; x < 9; x++) { m.muros.add(k(x, 3)); m.muros.add(k(x, 5)); }
+      for (let x = L + 1; x < 9; x++) m.muros.add(k(x, 4));
+      return m;
+    },
+    verificar(m, ctx) {
+      return ctx.impresos.includes(m.extra.L) ? null : `Debías escribir el número de pasos (esta vez eran ${m.extra.L}).`;
+    },
+    plantilla: "// Nivel 4: no sabes cuántos pasos hay\npasos <- 0\n",
+    solucion: "pasos <- 0\nmientras no hay_muro_adelante() hacer\n  avanzar\n  pasos <- pasos + 1\nfin_mientras\nescribir \"Pasos: \", pasos\n"
+  },
+  {
+    titulo: "Laberinto aleatorio", tema: "Algoritmo general", aleatorio: true,
+    objetivo: "Cada ejecución genera un laberinto distinto. Diseña un algoritmo que <b>siempre</b> encuentre la salida. Pista: la regla de la mano derecha.",
+    generar() {
+      const n = 11, m = base(n);
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) m.muros.add(k(x, y));
+      // Laberinto con búsqueda en profundidad (DFS)
+      (function excavar(x, y) {
+        m.muros.delete(k(x, y));
+        const dirs = [[2, 0], [-2, 0], [0, 2], [0, -2]].sort(() => Math.random() - 0.5);
+        for (const [dx, dy] of dirs) {
+          const nx = x + dx, ny = y + dy;
+          if (nx > 0 && ny > 0 && nx < n - 1 && ny < n - 1 && m.muros.has(k(nx, ny))) {
+            m.muros.delete(k(x + dx / 2, y + dy / 2));
+            excavar(nx, ny);
+          }
+        }
+      })(1, 1);
+      m.robot = { x: 1, y: 1, dir: 1 }; m.meta = [n - 2, n - 2];
+      return m;
+    },
+    plantilla: "// Nivel 5: un algoritmo para CUALQUIER laberinto\nmientras no en_meta() hacer\n  \nfin_mientras\n",
+    solucion: "// Regla de la mano derecha\nmientras no en_meta() hacer\n  si no hay_muro_derecha() entonces\n    girar_derecha\n    avanzar\n  sino\n    si no hay_muro_adelante() entonces\n      avanzar\n    sino\n      girar_izquierda\n    fin_si\n  fin_si\nfin_mientras\nescribir \"¡Salí en \", pasos_dados, \" pasos!\"\n"
+  }
+];
+// En la solución del nivel 5 se usa pasos_dados: lo definimos como sensor numérico
+// (ver SENSORES) para mostrar que también hay funciones que devuelven números.
+
+/* =========================================================
+   4. SENSORES (funciones que el pseudocódigo puede consultar)
+   ========================================================= */
+const SENSORES = {
+  hay_muro_adelante:  m => !libre(m, m.robot.x + DX[m.robot.dir], m.robot.y + DY[m.robot.dir]),
+  hay_muro_derecha:   m => { const d = (m.robot.dir + 1) % 4; return !libre(m, m.robot.x + DX[d], m.robot.y + DY[d]); },
+  hay_muro_izquierda: m => { const d = (m.robot.dir + 3) % 4; return !libre(m, m.robot.x + DX[d], m.robot.y + DY[d]); },
+  hay_moneda:         m => m.monedas.has(k(m.robot.x, m.robot.y)),
+  en_meta:            m => !!m.meta && m.robot.x === m.meta[0] && m.robot.y === m.meta[1],
+  monedas_recogidas:  m => m.recogidas,
+  pasos_dados:        m => m.pasos
+};
+const ACCIONES = ["avanzar", "girar_derecha", "girar_izquierda", "recoger"];
+const RESERVADAS = new Set(["repetir", "veces", "fin_repetir", "mientras", "hacer", "fin_mientras", "si", "entonces",
+  "sino", "fin_si", "para", "hasta", "con", "paso", "fin_para", "escribir", "mostrar", "y", "o", "no", "mod", "div",
+  "verdadero", "falso", ...ACCIONES]);
+
+/* =========================================================
+   5. INTÉRPRETE DE PSEUDOCÓDIGO
+   Etapas: tokenizar → parsear (árbol) → ejecutar (generador)
+   ========================================================= */
+function err(linea, msg) { const e = new Error(msg); e.linea = linea; return e; }
+const normalizar = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// ---- 5.1 Analizador léxico: convierte una línea en tokens ----
+function tokenizar(linea, num) {
+  const toks = []; let i = 0;
+  while (i < linea.length) {
+    const c = linea[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (c === "/" && linea[i + 1] === "/") break;                       // comentario
+    if (c === '"' || c === "'") {                                       // texto
+      const j = linea.indexOf(c, i + 1);
+      if (j < 0) throw err(num, "Falta cerrar las comillas del texto.");
+      toks.push({ t: "str", v: linea.slice(i + 1, j) }); i = j + 1; continue;
+    }
+    let m;
+    if ((m = linea.slice(i).match(/^\d+(\.\d+)?/))) { toks.push({ t: "num", v: parseFloat(m[0]) }); i += m[0].length; continue; }
+    if ((m = linea.slice(i).match(/^[a-záéíóúñü_][a-záéíóúñü_0-9]*/i))) { toks.push({ t: "id", v: normalizar(m[0]) }); i += m[0].length; continue; }
+    const dos = linea.substr(i, 2);
+    if (["<-", "<=", ">=", "<>", "==", "!=", "&&", "||"].includes(dos)) { toks.push({ t: "op", v: dos }); i += 2; continue; }
+    if (c === "←") { toks.push({ t: "op", v: "<-" }); i++; continue; }
+    if ("+-*/%^()<>=,!".includes(c)) { toks.push({ t: "op", v: c }); i++; continue; }
+    throw err(num, `Carácter no reconocido: "${c}"`);
+  }
+  return toks;
+}
+
+// ---- 5.2 Expresiones (precedencia: o < y < no < comparación < suma < producto < unario) ----
+function parsearExpresion(toks, num) {
+  if (!toks.length) throw err(num, "Falta una expresión.");
+  let i = 0;
+  const es = v => toks[i] && toks[i].t !== "str" && toks[i].v === v;
+  const disy = () => { let a = conj(); while (es("o") || es("||")) { i++; a = { op: "o", a, b: conj() }; } return a; };
+  const conj = () => { let a = neg(); while (es("y") || es("&&")) { i++; a = { op: "y", a, b: neg() }; } return a; };
+  const neg  = () => { if (es("no") || es("!")) { i++; return { op: "no", a: neg() }; } return comp(); };
+  const comp = () => {
+    let a = suma();
+    if (toks[i] && toks[i].t === "op" && ["=", "==", "<>", "!=", "<", ">", "<=", ">="].includes(toks[i].v)) {
+      const op = toks[i++].v; a = { op, a, b: suma() };
+    }
+    return a;
+  };
+  const suma = () => { let a = prod(); while (es("+") || es("-")) { const op = toks[i++].v; a = { op, a, b: prod() }; } return a; };
+  const prod = () => {
+    let a = unario();
+    while (es("*") || es("/") || es("%") || es("mod") || es("div")) { let op = toks[i++].v; if (op === "mod") op = "%"; a = { op, a, b: unario() }; }
+    return a;
+  };
+  const unario = () => { if (es("-")) { i++; return { op: "neg", a: unario() }; } return potencia(); };
+  const potencia = () => { const a = prim(); if (es("^")) { i++; return { op: "^", a, b: unario() }; } return a; };
+  const prim = () => {
+    const tk = toks[i];
+    if (!tk) throw err(num, "La expresión está incompleta.");
+    if (tk.t === "num" || tk.t === "str") { i++; return { val: tk.v }; }
+    if (es("(")) { i++; const e = disy(); if (!es(")")) throw err(num, 'Falta cerrar el paréntesis ")".'); i++; return e; }
+    if (tk.t === "id") {
+      i++;
+      if (tk.v === "verdadero") return { val: true };
+      if (tk.v === "falso") return { val: false };
+      if (es("(")) {
+        i++;
+        if (!es(")")) throw err(num, `${tk.v}() no recibe parámetros.`);
+        i++;
+        if (!SENSORES[tk.v]) throw err(num, `La función "${tk.v}()" no existe.`);
+        return { sensor: tk.v };
+      }
+      if (SENSORES[tk.v]) return { sensor: tk.v };
+      if (ACCIONES.includes(tk.v)) throw err(num, `"${tk.v}" es una acción, no un valor. Va sola en su propia línea.`);
+      if (RESERVADAS.has(tk.v)) throw err(num, `"${tk.v}" es una palabra reservada y no puede ir aquí.`);
+      return { var: tk.v };
+    }
+    throw err(num, `Símbolo inesperado "${tk.v}".`);
+  };
+  const r = disy();
+  if (i < toks.length) throw err(num, `Sobra "${toks[i].v}" en la expresión.`);
+  return r;
+}
+
+// ---- 5.3 Sentencias y bloques: construye el árbol del programa ----
+function parsear(codigo) {
+  const alias = { finsi: "fin_si", finmientras: "fin_mientras", finpara: "fin_para", finrepetir: "fin_repetir",
+                  finalgoritmo: "fin_algoritmo", imprimir: "escribir", mostrar: "escribir" };
+  const lineas = codigo.split("\n")
+    .map((txt, i) => ({ num: i + 1, toks: tokenizar(txt, i + 1) }))
+    .filter(l => l.toks.length);
+
+  for (const l of lineas) {
+    const t = l.toks;
+    if (t[0].t === "id" && alias[t[0].v]) t[0].v = alias[t[0].v];
+    if (t[0].v === "fin" && t[1] && t[1].t === "id") t.splice(0, 2, { t: "id", v: "fin_" + t[1].v });   // "fin si" → fin_si
+    if (t.length === 2 && t[0].v === "si" && t[1].v === "no") l.toks = [{ t: "id", v: "sino" }];         // "si no" → sino
+  }
+
+  let p = 0;
+  const pos = (t, palabra) => t.findIndex(x => x.t === "id" && x.v === palabra);
+  const posUlt = (t, palabra) => { for (let j = t.length - 1; j >= 0; j--) if (t[j].t === "id" && t[j].v === palabra) return j; return -1; };
+  const tramo = (t, a, b, num) => parsearExpresion(t.slice(a, b), num);
+
+  function bloque(cierres, abre) {
+    const sents = [];
+    while (p < lineas.length) {
+      const t = lineas[p].toks;
+      if (t[0].t === "id" && cierres.includes(t[0].v)) return sents;
+      sents.push(sentencia(lineas[p++]));
+    }
+    if (cierres.length) throw err(abre.num, `El "${abre.nombre}" de la línea ${abre.num} nunca se cerró: falta "${cierres[cierres.length - 1]}".`);
+    return sents;
+  }
+
+  function sentencia(l) {
+    const t = l.toks, n = l.num, cab = t[0].t === "id" ? t[0].v : null;
+
+    if (["algoritmo", "proceso", "inicio", "fin", "fin_algoritmo", "fin_proceso"].includes(cab)) return { tipo: "nada", n };
+
+    if (cab === "repetir") {
+      const iv = posUlt(t, "veces");
+      if (iv < 0) throw err(n, 'Formato: repetir N veces');
+      const veces = tramo(t, 1, iv, n);
+      const cuerpo = bloque(["fin_repetir"], { num: n, nombre: "repetir" }); p++;
+      return { tipo: "repetir", n, veces, cuerpo };
+    }
+    if (cab === "mientras") {
+      const ih = posUlt(t, "hacer");
+      if (ih < 0) throw err(n, 'Formato: mientras condición hacer');
+      const cond = tramo(t, 1, ih, n);
+      const cuerpo = bloque(["fin_mientras"], { num: n, nombre: "mientras" }); p++;
+      return { tipo: "mientras", n, cond, cuerpo };
+    }
+    if (cab === "si") {
+      const ie = posUlt(t, "entonces");
+      if (ie < 0) throw err(n, 'Formato: si condición entonces');
+      const cond = tramo(t, 1, ie, n);
+      const entonces = bloque(["sino", "fin_si"], { num: n, nombre: "si" });
+      let sino = [];
+      if (lineas[p].toks[0].v === "sino") { p++; sino = bloque(["fin_si"], { num: n, nombre: "si" }); }
+      p++;
+      return { tipo: "si", n, cond, entonces, sino };
+    }
+    if (cab === "para") {
+      const ih = pos(t, "hasta"), ihacer = posUlt(t, "hacer"), ic = pos(t, "con");
+      if (!t[1] || t[1].t !== "id" || !t[2] || !["<-", "="].includes(t[2].v) || ih < 0 || ihacer < 0)
+        throw err(n, "Formato: para i <- inicio hasta fin [con paso p] hacer");
+      const desde = tramo(t, 3, ih, n);
+      const hasta = tramo(t, ih + 1, ic >= 0 ? ic : ihacer, n);
+      const paso = ic >= 0 ? tramo(t, ic + 2, ihacer, n) : null;
+      const cuerpo = bloque(["fin_para"], { num: n, nombre: "para" }); p++;
+      return { tipo: "para", n, variable: t[1].v, desde, hasta, paso, cuerpo };
+    }
+    if (cab === "escribir") {
+      if (t.length < 2) throw err(n, 'Formato: escribir "texto", variable');
+      const partes = [[]]; let prof = 0;
+      for (const tk of t.slice(1)) {
+        if (tk.t === "op" && tk.v === "(") prof++;
+        if (tk.t === "op" && tk.v === ")") prof--;
+        if (tk.t === "op" && tk.v === "," && prof === 0) { partes.push([]); continue; }
+        partes[partes.length - 1].push(tk);
+      }
+      return { tipo: "escribir", n, args: partes.map(pt => parsearExpresion(pt, n)) };
+    }
+    // Acción con cantidad al inicio:  4 * avanzar   /   n * girar_derecha
+    const ult = t[t.length - 1];
+    if (t.length >= 3 && ult.t === "id" && ACCIONES.includes(ult.v) && t[t.length - 2].v === "*") {
+      return { tipo: "accion", n, accion: ult.v, veces: tramo(t, 0, t.length - 2, n) };
+    }
+    // Acción sola o con cantidad:  avanzar   avanzar()   avanzar 4   avanzar * 4   avanzar(n + 2)
+    if (ACCIONES.includes(cab)) {
+      let resto = t.slice(1);
+      if (resto.length && resto[0].t === "op" && resto[0].v === "*") resto = resto.slice(1);
+      if (resto.length === 2 && resto[0].v === "(" && resto[1].v === ")") resto = [];
+      const veces = resto.length ? parsearExpresion(resto, n) : null;
+      return { tipo: "accion", n, accion: cab, veces };
+    }
+    if (cab && t[1] && t[1].t === "op" && (t[1].v === "<-" || t[1].v === "=")) {
+      if (RESERVADAS.has(cab) || SENSORES[cab]) throw err(n, `"${cab}" es una palabra reservada; elige otro nombre de variable.`);
+      return { tipo: "asignar", n, nombre: cab, expr: tramo(t, 2, t.length, n) };
+    }
+    if (cab && (cab.startsWith("fin_") || cab === "sino"))
+      throw err(n, `"${cab}" no corresponde a ningún bloque abierto. Revisa el orden de los cierres.`);
+    throw err(n, `No entiendo esta instrucción. ¿Está bien escrita?`);
+  }
+
+  return bloque([], null);
+}
+
+// ---- 5.4 Evaluación de expresiones ----
+function evaluar(e, ctx, num) {
+  if ("val" in e) return e.val;
+  if (e.var) {
+    if (!(e.var in ctx.vars)) throw err(num, `La variable "${e.var}" se usa antes de darle un valor.`);
+    return ctx.vars[e.var];
+  }
+  if (e.sensor) return SENSORES[e.sensor](ctx.mundo);
+  const A = () => evaluar(e.a, ctx, num), B = () => evaluar(e.b, ctx, num);
+  const numero = v => { if (typeof v !== "number") throw err(num, `Se esperaba un número y llegó "${formato(v)}".`); return v; };
+  switch (e.op) {
+    case "o": return A() || B();
+    case "y": return A() && B();
+    case "no": return !A();
+    case "neg": return -numero(A());
+    case "+": { const a = A(), b = B(); return (typeof a === "string" || typeof b === "string") ? formato(a) + formato(b) : numero(a) + numero(b); }
+    case "-": return numero(A()) - numero(B());
+    case "*": return numero(A()) * numero(B());
+    case "/": { const a = numero(A()), b = numero(B()); if (b === 0) throw err(num, "División entre cero."); return a / b; }
+    case "%": { const a = numero(A()), b = numero(B()); if (b === 0) throw err(num, "mod entre cero."); return a % b; }
+    case "div": { const a = numero(A()), b = numero(B()); if (b === 0) throw err(num, "div entre cero."); return Math.trunc(a / b); }
+    case "^": return Math.pow(numero(A()), numero(B()));
+    case "=": case "==": return A() === B();
+    case "<>": case "!=": return A() !== B();
+    case "<": return A() < B();
+    case ">": return A() > B();
+    case "<=": return A() <= B();
+    case ">=": return A() >= B();
+  }
+}
+function formato(v) {
+  if (typeof v === "boolean") return v ? "verdadero" : "falso";
+  if (typeof v === "number") return String(Math.round(v * 10000) / 10000);
+  return String(v);
+}
+
+// ---- 5.5 Ejecución con generadores: cada "yield" es un paso visible ----
+const LIMITE = 20000;
+function contar(ctx, n) {
+  if (++ctx.instrucciones > LIMITE) throw err(n, `Se ejecutaron más de ${LIMITE} instrucciones. ¿Hay un bucle infinito?`);
+}
+function* ejecutarBloque(sents, ctx) { for (const s of sents) yield* ejecutarSentencia(s, ctx); }
+
+function* ejecutarSentencia(s, ctx) {
+  const ev = e => evaluar(e, ctx, s.n);
+  switch (s.tipo) {
+    case "nada": return;
+    case "accion": {
+      const veces = s.veces ? ev(s.veces) : 1;
+      if (!Number.isInteger(veces) || veces < 0)
+        throw err(s.n, `La cantidad para ${s.accion} debe ser un número entero ≥ 0 (resultó ${formato(veces)}).`);
+      for (let i = 0; i < veces; i++) { contar(ctx, s.n); accion(s, ctx); yield { linea: s.n, mov: true }; }
+      return;
+    }
+    case "asignar":  contar(ctx, s.n); ctx.vars[s.nombre] = ev(s.expr); yield { linea: s.n }; return;
+    case "escribir": {
+      contar(ctx, s.n);
+      const vals = s.args.map(ev);
+      vals.forEach(v => typeof v === "number" && ctx.impresos.push(v));
+      ctx.escribir(vals.map(formato).join(""));
+      yield { linea: s.n }; return;
+    }
+    case "repetir": {
+      const veces = ev(s.veces);
+      if (!Number.isInteger(veces) || veces < 0) throw err(s.n, "repetir necesita un número entero mayor o igual a 0.");
+      for (let i = 0; i < veces; i++) { contar(ctx, s.n); yield { linea: s.n }; yield* ejecutarBloque(s.cuerpo, ctx); }
+      return;
+    }
+    case "mientras":
+      while (true) {
+        contar(ctx, s.n); yield { linea: s.n };
+        if (!ev(s.cond)) break;
+        yield* ejecutarBloque(s.cuerpo, ctx);
+      }
+      return;
+    case "si":
+      contar(ctx, s.n); yield { linea: s.n };
+      yield* ejecutarBloque(ev(s.cond) ? s.entonces : s.sino, ctx);
+      return;
+    case "para": {
+      const desde = ev(s.desde), hasta = ev(s.hasta), paso = s.paso ? ev(s.paso) : 1;
+      if ([desde, hasta, paso].some(v => typeof v !== "number")) throw err(s.n, "Los límites de para deben ser números.");
+      if (paso === 0) throw err(s.n, "El paso no puede ser 0.");
+      for (let v = desde; paso > 0 ? v <= hasta : v >= hasta; v += paso) {
+        ctx.vars[s.variable] = v;
+        contar(ctx, s.n); yield { linea: s.n };
+        yield* ejecutarBloque(s.cuerpo, ctx);
+      }
+      return;
+    }
+  }
+}
+
+function accion(s, ctx) {
+  const m = ctx.mundo, r = m.robot;
+  if (s.accion === "avanzar") {
+    const nx = r.x + DX[r.dir], ny = r.y + DY[r.dir];
+    if (!libre(m, nx, ny)) throw err(s.n, "¡Choque! Hay un muro adelante. Verifica con hay_muro_adelante() antes de avanzar.");
+    r.x = nx; r.y = ny; m.pasos++; m.rastro.add(k(nx, ny));
+  }
+  if (s.accion === "girar_derecha")   r.dir = (r.dir + 1) % 4;
+  if (s.accion === "girar_izquierda") r.dir = (r.dir + 3) % 4;
+  if (s.accion === "recoger") {
+    const c = k(r.x, r.y);
+    if (!m.monedas.has(c)) throw err(s.n, "Aquí no hay moneda. Verifica con hay_moneda() antes de recoger.");
+    m.monedas.delete(c); m.recogidas++;
+  }
+}
+
+/* =========================================================
+   6. INTERFAZ
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const editor = $("editor"), gutter = $("gutter"), resaltado = $("resaltado"), consola = $("consola");
+const RETARDOS = [800, 600, 450, 320, 220, 150, 90, 45, 15, 0];
+
+let nivel = 0, mundo = null, ctx = null, gen = null, timer = null;
+let modo = "quieto";   // quieto | corriendo | pausa
+
+const guardar = (clave, valor) => { try { localStorage.setItem(clave, valor); } catch (e) {} };
+const leer = clave => { try { return localStorage.getItem(clave); } catch (e) { return null; } };
+const completados = () => JSON.parse(leer("robocodigo_ok") || "[]");
+
+function crearMundo() {
+  const m = NIVELES[nivel].generar();
+  m.rastro = new Set([k(m.robot.x, m.robot.y)]);
+  m.recogidas = 0; m.pasos = 0; m.total = m.monedas.size;
+  return m;
+}
+
+// ---- Tablero ----
+function dibujar() {
+  const m = mundo, t = $("tablero");
+  t.style.gridTemplateColumns = `repeat(${m.n}, 1fr)`;
+  let html = "";
+  for (let y = 0; y < m.n; y++) for (let x = 0; x < m.n; x++) {
+    const c = k(x, y), esMeta = m.meta && m.meta[0] === x && m.meta[1] === y;
+    let clase = "celda", cont = "";
+    if (m.muros.has(c)) { clase += " muro"; cont = icono("muro"); }
+    else if (m.rastro.has(c)) clase += " rastro";
+    if (esMeta) clase += " meta";
+    if (m.robot.x === x && m.robot.y === y) cont = iconoRobot(m.robot.dir);
+    else if (m.monedas.has(c)) cont = icono("moneda", "moneda");
+    else if (esMeta) cont = icono("estrella", "estrella");
+    html += `<div class="${clase}">${cont}</div>`;
+  }
+  t.innerHTML = html;
+  $("sPasos").textContent = m.pasos;
+  $("sInstr").textContent = ctx ? ctx.instrucciones : 0;
+  $("sMonedas").textContent = `${m.recogidas}/${m.total}`;
+}
+
+// ---- Editor con números de línea y resaltado ----
+function actualizarGutter(activa = 0, error = false) {
+  const total = editor.value.split("\n").length;
+  let html = "";
+  for (let i = 1; i <= total; i++) html += `<div class="${i === activa ? (error ? "err" : "act") : ""}">${i}</div>`;
+  gutter.innerHTML = html;
+  gutter.scrollTop = editor.scrollTop;
+}
+function resaltar(linea, error = false) {
+  if (!linea) { resaltado.style.display = "none"; actualizarGutter(); return; }
+  const top = 12 + (linea - 1) * 24;
+  if (top < editor.scrollTop + 12 || top > editor.scrollTop + editor.clientHeight - 40) editor.scrollTop = top - 100;
+  resaltado.style.display = "block";
+  resaltado.className = "resaltado" + (error ? " err" : "");
+  resaltado.style.top = (top - editor.scrollTop) + "px";
+  actualizarGutter(linea, error);
+}
+editor.addEventListener("scroll", () => {
+  gutter.scrollTop = editor.scrollTop;
+  if (resaltado.style.display === "block") {
+    const n = gutter.querySelector(".act, .err");
+    if (n) resaltado.style.top = (12 + ([...gutter.children].indexOf(n)) * 24 - editor.scrollTop) + "px";
+  }
+});
+editor.addEventListener("input", () => { actualizarGutter(); guardar("robocodigo_n" + nivel, editor.value); });
+editor.addEventListener("keydown", e => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const a = editor.selectionStart;
+    editor.value = editor.value.slice(0, a) + "  " + editor.value.slice(editor.selectionEnd);
+    editor.selectionStart = editor.selectionEnd = a + 2;
+    actualizarGutter();
+  }
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ejecutar(); }
+});
+
+// ---- Consola y variables ----
+function log(texto, tipo = "out") {
+  const ic = { info: "info", error: "alerta", ok: "exito", out: "salida", aviso: "dado" }[tipo];
+  const d = document.createElement("div");
+  d.className = "c-" + tipo;
+  d.innerHTML = icono(ic) + "<span></span>";
+  d.lastChild.textContent = texto;
+  consola.appendChild(d);
+  consola.scrollTop = consola.scrollHeight;
+}
+function mostrarVariables() {
+  const vars = ctx ? Object.entries(ctx.vars) : [];
+  $("vars").innerHTML = vars.length
+    ? `<table class="vars"><tr><th>Nombre</th><th>Valor</th><th>Tipo</th></tr>${vars.map(([n, v]) =>
+        `<tr><td>${n}</td><td>${formato(v)}</td><td>${typeof v === "number" ? "número" : typeof v === "boolean" ? "lógico" : "texto"}</td></tr>`).join("")}</table>`
+    : '<div class="vacio">Aquí verás tus variables mientras el programa corre.</div>';
+}
+
+// ---- Control de ejecución ----
+function preparar() {
+  let arbol;
+  consola.innerHTML = "";
+  try { arbol = parsear(editor.value); }
+  catch (e) {
+    ctx = null; mundo = crearMundo(); dibujar(); mostrarVariables();
+    log(`Línea ${e.linea}: ${e.message}`, "error"); resaltar(e.linea, true); return false;
+  }
+  mundo = crearMundo();
+  ctx = { mundo, vars: {}, instrucciones: 0, impresos: [], escribir: t => log(t, "out") };
+  gen = ejecutarBloque(arbol, ctx);
+  editor.readOnly = true;
+  if (NIVELES[nivel].aleatorio) log("Escenario nuevo generado al azar.", "aviso");
+  log("Programa iniciado.", "info");
+  dibujar(); mostrarVariables();
+  return true;
+}
+
+// Ejecuta un paso del generador. Devuelve el paso o null si terminó.
+function avanzarUnPaso() {
+  let r;
+  try { r = gen.next(); }
+  catch (e) { terminar(); dibujar(); mostrarVariables(); log(`Línea ${e.linea}: ${e.message}`, "error"); resaltar(e.linea, true); return null; }
+  if (r.done) { finalizar(); return null; }
+  return r.value;
+}
+
+function tic() {
+  const espera = RETARDOS[$("velocidad").value - 1];
+  let paso, lote = espera === 0 ? 40 : 1;
+  while (lote-- > 0) { paso = avanzarUnPaso(); if (!paso) return; }
+  dibujar(); mostrarVariables(); resaltar(paso.linea);
+  timer = setTimeout(tic, paso.mov ? espera : Math.min(espera * 0.35, 120));
+}
+
+function ejecutar() {
+  if (modo === "corriendo") { pausar(); return; }
+  if (modo === "quieto" && !preparar()) return;
+  modo = "corriendo"; botones(); tic();
+}
+function pausar() { clearTimeout(timer); modo = "pausa"; botones(); }
+function pasoAPaso() {
+  if (modo === "corriendo") { pausar(); return; }
+  if (modo === "quieto") { if (!preparar()) return; modo = "pausa"; botones(); }
+  const paso = avanzarUnPaso();
+  if (paso) { dibujar(); mostrarVariables(); resaltar(paso.linea); }
+}
+function terminar() {
+  clearTimeout(timer); modo = "quieto"; editor.readOnly = false; botones();
+}
+function detener() {
+  if (modo === "quieto") return;
+  terminar(); resaltar(0); log("Ejecución detenida.", "info");
+}
+
+function finalizar() {
+  terminar(); dibujar(); mostrarVariables(); resaltar(0);
+  const N = NIVELES[nivel], m = mundo, fallas = [];
+  if (m.meta && !SENSORES.en_meta(m)) fallas.push("El robot no terminó en la estrella.");
+  if (m.monedas.size) fallas.push(`Quedaron ${m.monedas.size} moneda(s) sin recoger.`);
+  const extra = N.verificar && N.verificar(m, ctx);
+  if (extra) fallas.push(extra);
+
+  log(`Programa finalizado: ${m.pasos} pasos, ${ctx.instrucciones} instrucciones.`, "info");
+  if (fallas.length) { fallas.forEach(f => log(f, "error")); return; }
+
+  log(`¡Nivel superado! ${N.aleatorio ? "Ejecútalo varias veces: si siempre funciona, tu algoritmo es general." : ""}`, "ok");
+  const ok = completados();
+  if (!ok.includes(nivel)) { ok.push(nivel); guardar("robocodigo_ok", JSON.stringify(ok)); pintarNiveles(); }
+  confeti();
+}
+
+function botones() {
+  $("tEjecutar").textContent = modo === "corriendo" ? "Pausar" : modo === "pausa" ? "Continuar" : "Ejecutar";
+  $("bEjecutar").firstElementChild.outerHTML = icono(modo === "corriendo" ? "pausa" : "play");
+  $("bDetener").disabled = modo === "quieto";
+  $("bSolucion").disabled = modo !== "quieto";
+}
+
+// ---- Niveles ----
+function pintarNiveles() {
+  const ok = completados();
+  $("niveles").innerHTML = NIVELES.map((N, i) =>
+    `<button class="${i === nivel ? "activo" : ""} ${ok.includes(i) ? "hecho" : ""}" data-n="${i}" title="${N.titulo}">
+       ${ok.includes(i) ? icono("check") : ""} Nivel ${i + 1}</button>`).join("");
+  $("niveles").querySelectorAll("button").forEach(b => b.onclick = () => cargarNivel(+b.dataset.n));
+}
+function cargarNivel(i) {
+  terminar();
+  nivel = i;
+  const N = NIVELES[i];
+  $("titulo").innerHTML = `${N.titulo} <span class="tema">${N.tema}</span>` +
+    (N.aleatorio ? ` <span class="aleatorio">${icono("dado")} Aleatorio</span>` : "");
+  $("objetivo").innerHTML = N.objetivo;
+  editor.value = leer("robocodigo_n" + i) ?? N.plantilla;
+  ctx = null; mundo = crearMundo();
+  consola.innerHTML = "";
+  log("Escribe tu algoritmo y presiona Ejecutar (Ctrl + Enter).", "info");
+  pintarNiveles(); dibujar(); mostrarVariables(); resaltar(0);
+}
+
+$("bEjecutar").onclick = ejecutar;
+$("bPaso").onclick = pasoAPaso;
+$("bDetener").onclick = detener;
+$("bSolucion").onclick = () => {
+  if (confirm("¿Reemplazar tu código por la solución de este nivel?")) {
+    editor.value = NIVELES[nivel].solucion;
+    guardar("robocodigo_n" + nivel, editor.value);
+    actualizarGutter(); resaltar(0);
+  }
+};
+
+// ---- Confeti ----
+function confeti() {
+  const colores = ["#F5B83D", "#4CC9F0", "#5BD68A", "#FF6B6B", "#F5F3EE"];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement("div"), t = 8 + Math.random() * 10;
+    c.className = "confeti";
+    c.style.cssText += `left:${Math.random() * 100}vw;width:${t}px;height:${t * 0.6}px;background:${colores[i % 5]};transition:transform ${2 + Math.random() * 2}s linear;`;
+    document.body.appendChild(c);
+    requestAnimationFrame(() => c.style.transform = `translateY(${innerHeight + 60}px) rotate(${Math.random() * 900}deg)`);
+    setTimeout(() => c.remove(), 4500);
+  }
+}
+
+cargarNivel(0);
+botones();
+</script>
+</body>
+</html>

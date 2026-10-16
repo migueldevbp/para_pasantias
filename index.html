@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROGRAMA DE ESTUDIOS COMPUTACIÓN E INFOMRÁTICA · Retos</title>
+<style>
+  :root { --oscuro:#10172A; --panel:#1C2640; --claro:#F5F3EE; --suave:#9AA6C0; --ambar:#F5B83D; --cian:#4CC9F0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--oscuro); color: var(--claro);
+    font-family: "Segoe UI", Arial, sans-serif; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 32px 16px;
+  }
+  .ico { width: 1em; height: 1em; flex-shrink: 0; }
+  .logo { width: 72px; height: 72px; color: var(--cian); margin-bottom: 12px; }
+  .etiqueta {
+    font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--oscuro); background: var(--ambar); padding: 6px 14px; border-radius: 999px;
+  }
+  h1 { font-size: clamp(30px, 7vw, 52px); margin: 16px 0 8px; text-align: center; line-height: 1.1; }
+  .sub { color: var(--suave); margin: 0 0 32px; text-align: center; font-size: 18px; }
+  .opciones { display: grid; gap: 16px; width: min(100%, 720px); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  a.opcion {
+    display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit;
+    background: var(--panel); border: 2px solid transparent; border-radius: 20px; padding: 24px;
+    transition: border-color .2s, transform .15s;
+  }
+  a.opcion:hover { border-color: var(--cian); transform: translateY(-3px); }
+  a.opcion:active { transform: scale(.98); }
+  .icono-caja { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+  .icono-caja .ico { width: 30px; height: 30px; }
+  .nivel { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .opcion h2 { margin: 0; font-size: 26px; }
+  .opcion p { margin: 0; color: #C9CFDC; line-height: 1.5; }
+  .ir { margin-top: 8px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .a .icono-caja { background: rgba(245,184,61,.15); color: var(--ambar); } .a .nivel, .a .ir { color: var(--ambar); }
+  .b .icono-caja { background: rgba(76,201,240,.15); color: var(--cian); }  .b .nivel, .b .ir { color: var(--cian); }
+  footer { margin-top: 40px; color: #55617D; font-size: 14px; text-align: center; }
+</style>
+</head>
+<body>
+  <svg class="ico logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.5"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><path d="M2 12v4M22 12v4"/></svg>
+  <span class="etiqueta">Programación de Sistemas</span>
+  <h1>Elige tu reto</h1>
+  <p class="sub">Programa al robot desde tu celular</p>
+
+  <div class="opciones">
+    <a class="opcion a" href="robot.html">
+      <div class="icono-caja"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      <span class="nivel">Nivel inicial</span>
+      <h2>Programa al Robot</h2>
+      <p>Arma la secuencia de flechas y lleva al robot hasta la estrella. ¡Sin chocar!</p>
+      <span class="ir">Jugar <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+    <a class="opcion b" href="robocodigo.html">
+      <div class="icono-caja"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div>
+      <span class="nivel">Nivel avanzado</span>
+      <h2>RoboCódigo</h2>
+      <p>Escribe pseudocódigo real con bucles, condicionales y variables. Resuelve 5 niveles.</p>
+      <span class="ir">Jugar <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </div>
+
+  <footer>IESTP Pasco · Programación de Sistemas</footer>
+  <footer>POWERED BY - MIGUEL BORJA</footer>
+</body>
+</html>

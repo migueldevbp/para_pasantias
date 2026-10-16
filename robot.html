@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programa al Robot</title>
+<style>
+  :root {
+    --oscuro: #10172A;
+    --panel: #1C2640;
+    --claro: #F5F3EE;
+    --ambar: #F5B83D;
+    --cian: #4CC9F0;
+    --rojo: #FF6B6B;
+    --verde: #5BD68A;
+    --ladrillo: #D9825B;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--oscuro);
+    color: var(--claro);
+    font-family: "Segoe UI", Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  /* ---------- Íconos ---------- */
+  .ico { width: 1em; height: 1em; vertical-align: -0.15em; flex-shrink: 0; }
+  .rot-90  { transform: rotate(90deg); }
+  .rot-180 { transform: rotate(180deg); }
+  .rot-270 { transform: rotate(270deg); }
+
+  h1 { margin: 0 0 4px; font-size: clamp(28px, 4vw, 48px); display: flex; align-items: center; gap: 12px; }
+  h1 .ico { color: var(--cian); }
+  .sub { margin: 0 0 20px; color: #BFC8D9; font-size: clamp(16px, 2vw, 22px); text-align: center; }
+  .sub .ico { color: var(--ambar); }
+  .nivel { color: var(--ambar); font-weight: bold; }
+
+  .juego { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+
+  /* ---------- Tablero ---------- */
+  .tablero {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    background: var(--panel);
+    padding: 12px;
+    border-radius: 20px;
+    width: min(90vw, 480px);
+  }
+  .celda {
+    aspect-ratio: 1;
+    background: #26324F;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .celda .ico { width: 70%; height: 70%; }
+  .celda.rastro { background: #2F4A6B; }
+  .celda.muro   { background: #3A2A2A; }
+  .robot { color: var(--cian); }
+  .meta  { color: var(--ambar); animation: brillo 1.2s ease-in-out infinite alternate; }
+  .muro .ico { color: var(--ladrillo); }
+  @keyframes brillo { from { transform: scale(0.9); } to { transform: scale(1.05); } }
+
+  /* ---------- Panel de comandos ---------- */
+  .panel {
+    background: var(--panel);
+    border-radius: 20px;
+    padding: 20px;
+    width: min(90vw, 420px);
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 22px; color: var(--cian); }
+  .flechas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .flechas button:nth-child(1) { grid-column: 2; }
+  button {
+    font-size: 20px;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    background: #34436A;
+    color: var(--claro);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.1s, filter 0.2s;
+  }
+  button .ico { width: 24px; height: 24px; }
+  button:hover { filter: brightness(1.2); }
+  button:active { transform: scale(0.95); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .programa {
+    min-height: 120px;
+    background: var(--oscuro);
+    border-radius: 12px;
+    padding: 12px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 20px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    overflow-y: auto;
+    max-height: 260px;
+  }
+  .programa .vacio { color: #6B7794; }
+  .linea { padding: 0 8px; border-radius: 6px; display: flex; align-items: center; gap: 10px; }
+  .linea .num { color: #6B7794; min-width: 22px; }
+  .linea .ico { color: var(--cian); }
+  .linea.activa { background: var(--ambar); color: var(--oscuro); }
+  .linea.activa .num, .linea.activa .ico { color: var(--oscuro); }
+
+  .acciones { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+  .ejecutar { background: var(--verde); color: var(--oscuro); }
+  .borrar { background: #5A4A2A; }
+  .limpiar { background: #5A2A2A; }
+
+  .mensaje {
+    margin-top: 20px;
+    font-size: clamp(20px, 3vw, 30px);
+    font-weight: bold;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+  }
+  .ok { color: var(--verde); }
+  .error { color: var(--rojo); }
+  .info { color: var(--ambar); }
+  .tip { margin-top: 8px; color: #6B7794; font-size: 15px; text-align: center; display: flex; align-items: center; gap: 8px; }
+
+  /* ---------- Confeti ---------- */
+  .confeti { position: fixed; top: -30px; pointer-events: none; border-radius: 3px; }
+</style>
+</head>
+<body>
+<a href="index.html" style="position:fixed;top:12px;left:12px;color:#9AA6C0;text-decoration:none;font:600 14px Segoe UI,Arial,sans-serif;background:#1C2640;padding:8px 14px;border-radius:999px;z-index:20">&#8592; Retos</a>
+
+<h1><span data-i="robot"></span> Programa al Robot</h1>
+<p class="sub">Arma las instrucciones y lleva al robot hasta la <span data-i="estrella"></span> — <span class="nivel" id="textoNivel">Nivel 1</span></p>
+
+<div class="juego">
+  <div class="tablero" id="tablero"></div>
+
+  <div class="panel">
+    <h2>1. Elige las órdenes</h2>
+    <div class="flechas">
+      <button onclick="agregar('arriba')"><span data-i="flecha"></span> Arriba</button>
+      <button onclick="agregar('izquierda')"><span data-i="flecha" data-rot="270"></span> Izq.</button>
+      <button onclick="agregar('abajo')"><span data-i="flecha" data-rot="180"></span> Abajo</button>
+      <button onclick="agregar('derecha')"><span data-i="flecha" data-rot="90"></span> Der.</button>
+    </div>
+
+    <h2>2. Tu programa</h2>
+    <div class="programa" id="programa"></div>
+
+    <div class="acciones">
+      <button class="ejecutar" id="btnEjecutar" onclick="ejecutar()"><span data-i="play"></span> Ejecutar</button>
+      <button class="borrar" onclick="borrarUltimo()" title="Borrar última orden"><span data-i="deshacer"></span></button>
+      <button class="limpiar" onclick="limpiar()" title="Borrar todo"><span data-i="basura"></span></button>
+    </div>
+  </div>
+</div>
+
+<div class="mensaje" id="mensaje"></div>
+<p class="tip"><span data-i="teclado"></span> También puedes usar las flechas del teclado y Enter para ejecutar.</p>
+
+<script>
+// =============================================
+//  ÍCONOS (SVG integrados, funcionan sin internet)
+// =============================================
+const ICONOS = {
+  robot:    '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.5"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><path d="M2 12v4M22 12v4"/>',
+  estrella: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>',
+  muro:     '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9.3h18M3 14.7h18M12 4v5.3M7.5 9.3v5.4M16.5 9.3v5.4M12 14.7V20"/>',
+  flecha:   '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  play:     '<polygon points="6 4 20 12 6 20 6 4" fill="currentColor"/>',
+  deshacer: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  basura:   '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/>',
+  choque:   '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  exito:    '<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>',
+  trofeo:   '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+  duda:     '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+  idea:     '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
+  engrane:  '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  teclado:  '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>'
+};
+
+function icono(nombre, rot = 0) {
+  const clase = rot ? ` rot-${rot}` : "";
+  return `<svg class="ico${clase}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[nombre]}</svg>`;
+}
+
+// Reemplaza cada <span data-i="..."> del HTML por su ícono
+document.querySelectorAll("[data-i]").forEach(el => {
+  el.outerHTML = icono(el.dataset.i, Number(el.dataset.rot || 0));
+});
+
+// =============================================
+//  NIVELES: posición [columna, fila] en un tablero de 6x6
+// =============================================
+const NIVELES = [
+  { inicio: [0, 0], meta: [4, 0], muros: [] },
+  { inicio: [0, 0], meta: [4, 4], muros: [[2,0],[2,1],[2,2],[2,3],[4,3]] },
+  { inicio: [0, 5], meta: [5, 0], muros: [[1,3],[1,4],[1,5],[3,0],[3,1],[3,2],[3,3],[5,1],[5,2]] }
+];
+
+const TAM = 6;                 // tamaño del tablero
+const MAX_ORDENES = 15;        // máximo de instrucciones
+const GIRO = { arriba: 0, derecha: 90, abajo: 180, izquierda: 270 };
+
+let nivel = 0;
+let robot = [0, 0];
+let programa = [];             // aquí se guardan las órdenes
+let ejecutando = false;
+
+// ---------- Dibujar el tablero ----------
+function dibujar(rastro = []) {
+  const tablero = document.getElementById("tablero");
+  tablero.innerHTML = "";
+  const n = NIVELES[nivel];
+
+  for (let fila = 0; fila < TAM; fila++) {
+    for (let col = 0; col < TAM; col++) {
+      const celda = document.createElement("div");
+      celda.className = "celda";
+      if (rastro.some(p => p[0] === col && p[1] === fila)) celda.classList.add("rastro");
+
+      if (robot[0] === col && robot[1] === fila) {
+        celda.innerHTML = `<span class="robot">${icono("robot")}</span>`;
+        celda.firstChild.style.cssText = "display:flex;width:100%;height:100%;align-items:center;justify-content:center";
+      } else if (n.meta[0] === col && n.meta[1] === fila) {
+        celda.innerHTML = `<span class="meta" style="display:flex;width:100%;height:100%;align-items:center;justify-content:center">${icono("estrella")}</span>`;
+      } else if (n.muros.some(m => m[0] === col && m[1] === fila)) {
+        celda.classList.add("muro");
+        celda.innerHTML = icono("muro");
+      }
+      tablero.appendChild(celda);
+    }
+  }
+}
+
+// ---------- Mostrar el programa como código ----------
+function mostrarPrograma(activa = -1) {
+  const caja = document.getElementById("programa");
+  if (programa.length === 0) {
+    caja.innerHTML = '<span class="vacio">// Aún no hay instrucciones...</span>';
+    return;
+  }
+  caja.innerHTML = programa.map((orden, i) =>
+    `<div class="linea ${i === activa ? "activa" : ""}">
+       <span class="num">${i + 1}</span>
+       <span>mover("${orden}")</span>
+       ${icono("flecha", GIRO[orden])}
+     </div>`
+  ).join("");
+  if (activa >= 0) caja.children[activa].scrollIntoView({ block: "nearest" });
+}
+
+function mensaje(texto, tipo = "info", ico = "") {
+  const m = document.getElementById("mensaje");
+  m.innerHTML = texto ? (ico ? icono(ico) : "") + `<span>${texto}</span>` : "";
+  m.className = "mensaje " + tipo;
+}
+
+// ---------- Editar el programa ----------
+function agregar(orden) {
+  if (ejecutando) return;
+  if (programa.length >= MAX_ORDENES) { mensaje("¡Máximo " + MAX_ORDENES + " órdenes!", "error", "choque"); return; }
+  programa.push(orden);
+  mostrarPrograma();
+  mensaje("");
+}
+function borrarUltimo() { if (!ejecutando) { programa.pop(); mostrarPrograma(); } }
+function limpiar() { if (!ejecutando) { programa = []; reiniciarRobot(); mostrarPrograma(); mensaje(""); } }
+
+function reiniciarRobot() {
+  robot = [...NIVELES[nivel].inicio];
+  dibujar();
+}
+
+// ---------- Ejecutar paso a paso ----------
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+
+async function ejecutar() {
+  if (ejecutando) return;
+  if (programa.length === 0) { mensaje("Primero agrega instrucciones", "info", "idea"); return; }
+
+  ejecutando = true;
+  document.getElementById("btnEjecutar").disabled = true;
+  reiniciarRobot();
+  const n = NIVELES[nivel];
+  const rastro = [[...robot]];
+  mensaje("Ejecutando...", "info", "engrane");
+  await esperar(400);
+
+  for (let i = 0; i < programa.length; i++) {
+    mostrarPrograma(i);
+    let [x, y] = robot;
+    if (programa[i] === "arriba") y--;
+    if (programa[i] === "abajo") y++;
+    if (programa[i] === "izquierda") x--;
+    if (programa[i] === "derecha") x++;
+
+    // ¿Se salió del tablero o chocó con un muro?
+    if (x < 0 || y < 0 || x >= TAM || y >= TAM || n.muros.some(m => m[0] === x && m[1] === y)) {
+      mensaje(`¡Choque en la línea ${i + 1}! El robot hizo exactamente lo que le dijiste.`, "error", "choque");
+      return terminar();
+    }
+
+    robot = [x, y];
+    rastro.push([x, y]);
+    dibujar(rastro);
+    await esperar(450);
+
+    if (x === n.meta[0] && y === n.meta[1]) {
+      return ganar(i + 1);
+    }
+  }
+  mensaje("El programa terminó, pero el robot no llegó a la estrella.", "error", "duda");
+  terminar();
+}
+
+function terminar() {
+  ejecutando = false;
+  document.getElementById("btnEjecutar").disabled = false;
+}
+
+async function ganar(pasos) {
+  if (nivel < NIVELES.length - 1) {
+    mensaje(`¡Lo lograste en ${pasos} pasos! Siguiente nivel...`, "ok", "exito");
+    await esperar(2000);
+    nivel++;
+    cargarNivel();
+  } else {
+    mensaje("¡Completaste todos los niveles! Ya piensas como programador.", "ok", "trofeo");
+    lanzarConfeti();
+  }
+  terminar();
+}
+
+function cargarNivel() {
+  programa = [];
+  document.getElementById("textoNivel").textContent = `Nivel ${nivel + 1} de ${NIVELES.length}`;
+  reiniciarRobot();
+  mostrarPrograma();
+}
+
+// ---------- Confeti final ----------
+function lanzarConfeti() {
+  const colores = ["#F5B83D", "#4CC9F0", "#5BD68A", "#FF6B6B", "#F5F3EE"];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement("div");
+    const tam = 8 + Math.random() * 10;
+    c.className = "confeti";
+    c.style.cssText += `left:${Math.random() * 100}vw;width:${tam}px;height:${tam * 0.6}px;
+      background:${colores[i % colores.length]};
+      transition:transform ${2 + Math.random() * 2}s linear;`;
+    document.body.appendChild(c);
+    requestAnimationFrame(() => {
+      c.style.transform = `translateY(${window.innerHeight + 60}px) rotate(${Math.random() * 900}deg)`;
+    });
+    setTimeout(() => c.remove(), 4500);
+  }
+}
+
+// ---------- Teclado ----------
+document.addEventListener("keydown", e => {
+  const teclas = { ArrowUp: "arriba", ArrowDown: "abajo", ArrowLeft: "izquierda", ArrowRight: "derecha" };
+  if (teclas[e.key]) { e.preventDefault(); agregar(teclas[e.key]); }
+  if (e.key === "Enter") ejecutar();
+  if (e.key === "Backspace") borrarUltimo();
+});
+
+cargarNivel();
+</script>
+</body>
+</html>
